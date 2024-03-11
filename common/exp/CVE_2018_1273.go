@@ -96,7 +96,7 @@ func CVE_2018_1273(url string) {
 
 		}
 	} else {
-		color.Yellow("[-] 未发现CVE-2018-1273远程命令执行漏洞\n")
+		color.Yellow("[-] %s 未发现CVE-2018-1273远程命令执行漏洞\n", url)
 	}
 
 }

