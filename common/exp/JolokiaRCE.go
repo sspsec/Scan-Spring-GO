@@ -83,8 +83,8 @@ func JolokiaRCE(url string) {
 			common.PrintVulnerabilityConfirmation("Jolokia-Realm-JNDI-RCE", url, url+path3, "8")
 			fmt.Println(url + path3)
 		} else {
-			fmt.Println("[.] 未发现jolokia/list路径存在关键词，请手动验证：")
-			fmt.Println(url + path3)
+			color.Yellow("[-] 未发现jolokia/list路径存在关键词，请手动验证：" + url + path3)
+
 		}
 	} else {
 		color.Yellow("[-] %s 未发现Jolokia系列RCE漏洞\n", url)
