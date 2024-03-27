@@ -11,7 +11,6 @@ _(__  )_(__  )__  /_/ /
               version:` + version + `
 
 `
-
 	print(banner)
 }
 

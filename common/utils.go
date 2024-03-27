@@ -94,3 +94,16 @@ func ContainsAny(s string, substrs []string) bool {
 	}
 	return false
 }
+
+func WriteToFile(filename, content string) error {
+	file, err := os.OpenFile(filename, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	if _, err := file.WriteString(content + "\n"); err != nil {
+		return err
+	}
+	return nil
+}

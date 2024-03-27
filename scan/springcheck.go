@@ -59,20 +59,25 @@ func SpringCheck(url string) {
 }
 
 func ScanURLs(baseURL string) {
-
 	var wg sync.WaitGroup
+	resultFile, err := os.Create("result.txt")
+	if err != nil {
+		fmt.Println("创建文件失败:", err)
+		return
+	}
+	defer resultFile.Close()
 	for _, endpoint := range common.Endpoints {
 		wg.Add(1)
 		go func(endpoint string) {
 			defer wg.Done()
 			u := baseURL + endpoint
 
-			header := map[string]string{"User-Agent": "Mozilla/5.0"} // 可以根据需要修改User-Agent
+			header := map[string]string{"User-Agent": "Mozilla/5.0"}
 
 			client := &http.Client{
-				Timeout: 6 * time.Second, // 设置超时时间为6秒
+				Timeout: 6 * time.Second,
 				CheckRedirect: func(req *http.Request, via []*http.Request) error {
-					return http.ErrUseLastResponse // 禁止跟随重定向
+					return http.ErrUseLastResponse
 				},
 			}
 
@@ -82,14 +87,13 @@ func ScanURLs(baseURL string) {
 				return
 			}
 
-			// 添加自定义头部
 			for key, value := range header {
 				req.Header.Set(key, value)
 			}
 
 			resp, err := client.Do(req)
 			if err != nil {
-				color.Yellow("[+] URL为：%s，的目标积极拒绝请求，予以跳过\n", u)
+				fmt.Printf("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", u)
 				return
 			}
 			defer resp.Body.Close()
@@ -105,16 +109,19 @@ func ScanURLs(baseURL string) {
 			} else if resp.StatusCode == 200 && !strings.Contains(string(body), "need login") &&
 				!strings.Contains(string(body), "禁止访问") && len(body) != 3318 && !strings.Contains(string(body), "无访问权限") &&
 				!strings.Contains(string(body), "认证失败") {
-				color.Red("[+] 状态码%d 信息泄露URL为:%s 页面长度为:%d\n", resp.StatusCode, u, len(body))
+				message := fmt.Sprintf("[+] 状态码%d 信息泄露URL为:%s 页面长度为:%d", resp.StatusCode, u, len(body))
+				color.Red(message)
+				if err := common.WriteToFile("result.txt", message); err != nil {
+					fmt.Println("写入文件失败:", err)
+				}
 			} else if resp.StatusCode == 200 {
-				color.Red("[+] 状态码%d 但无法获取信息 URL为:%s 页面长度为:%d\n", resp.StatusCode, u, len(body))
+				color.Red("[-] 状态码%d 但无法获取信息 URL为:%s 页面长度为:%d\n", resp.StatusCode, u, len(body))
 			} else {
 				color.Yellow("[-] 状态码%d 无法访问URL为:%s\n", resp.StatusCode, u)
 			}
 		}(endpoint)
 	}
 	wg.Wait()
-
 	os.Exit(0)
 }
 
