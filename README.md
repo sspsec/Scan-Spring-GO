@@ -144,4 +144,6 @@ ssp -u http://example.com -delay 3
 
 ![扫码关注公众号](https://github.com/sspsec/ssp/assets/142762749/0654010c-cdcc-4cf5-8f22-fc33b8d86642)
 
-<img src="https://star-history.com/#sspsec/Scan-Spring-GO&Timeline">
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=sspsec/Scan-Spring-GO&type=Date)](https://star-history.com/#sspsec/Scan-Spring-GO&Date)
