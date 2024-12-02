@@ -1,8 +1,21 @@
 package common
 
-var version = "1.2"
+import "time"
 
+var version = "1.2"
 var Vulnum = 0
+
+const (
+	requestTimeout = 6 * time.Second
+)
+
+const (
+	Red    = "\033[31m"
+	Green  = "\033[32m"
+	Yellow = "\033[33m"
+	Cyan   = "\033[36m"
+	Reset  = "\033[0m"
+)
 
 var userAgents = []string{
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3",
@@ -18,6 +31,7 @@ var userAgents = []string{
 }
 
 var Endpoints = []string{
+	"api-docs",
 	"actuator",
 	"actuator/./env",
 	"actuator/auditLog",
@@ -72,8 +86,12 @@ var Endpoints = []string{
 	"api",
 	"api.html",
 	"api/actuator",
+	"api/doc",
 	"api/index.html",
+	"api/swaggerui",
 	"api/swagger-ui.html",
+	"api/swagger",
+	"api/swagger/ui",
 	"api/v2/api-docs",
 	"api/v2;%0A/api-docs",
 	"api/v2;%252Ftest/api-docs",
@@ -85,6 +103,7 @@ var Endpoints = []string{
 	"configprops",
 	"distv2/index.html",
 	"docs",
+	"doc.html",
 	"druid",
 	"druid/index.html",
 	"druid/login.html",
@@ -98,6 +117,7 @@ var Endpoints = []string{
 	"env/(name)",
 	"eureka",
 	"flyway",
+	"functionRouter",
 	"gateway/actuator",
 	"gateway/actuator/auditevents",
 	"gateway/actuator/beans",
@@ -127,6 +147,7 @@ var Endpoints = []string{
 	"jolokia/list",
 	"jeecg/swagger-ui",
 	"jeecg/swagger/",
+	"libs/swaggerui",
 	"liquibase",
 	"list",
 	"logfile",
@@ -153,6 +174,10 @@ var Endpoints = []string{
 	"swagger/index.html",
 	"swagger/static/index.html",
 	"swagger/swagger-ui.html",
+	"Swagger/ui/index",
+	"swagger/ui",
+	"swagger/v1/swagger.json",
+	"swagger/v2/swagger.json",
 	"swagger-dubbo/api-docs",
 	"swagger-resources",
 	"swagger-resources/configuration/ui",
@@ -173,7 +198,6 @@ var Endpoints = []string{
 	"v1/api-docs/",
 	"v2/api-docs/",
 	"v3/api-docs/",
-	"v1/swagger-resources",
 	"v1/swagger-resources",
 	"v2/swagger-resources",
 	"v3/swagger-resources",

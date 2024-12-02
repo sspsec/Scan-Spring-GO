@@ -8,26 +8,25 @@ import (
 	"runtime"
 	"ssp/common"
 	exppackage "ssp/common/exp"
-
 	"ssp/common/poc"
 	"strconv"
 	"strings"
 	"sync"
 )
 
-type vulnerability func(url string)
-
 func ScanVuln(url string) {
 	url = common.FormatURL(url)
-	poc.CVE_2022_22965(url)
-	poc.CVE_2022_22963(url)
-	poc.CVE_2021_21234(url)
-	poc.CVE_2022_22947(url)
-	poc.JeeSpring_2023(url)
-	poc.SnakeYAML_RCE(url)
-	poc.EurekaXstreamRCE(url)
-	poc.JolokiaRCE(url)
-	poc.CVE_2018_1273(url)
+	proxyURL := *common.ProxyPtr
+	poc.CVE_2022_22965(url, proxyURL)
+	poc.CVE_2022_22963(url, proxyURL)
+	poc.CVE_2021_21234(url, proxyURL)
+	poc.CVE_2022_22947(url, proxyURL)
+	poc.JeeSpring_2023(url, proxyURL)
+	poc.SnakeYAML_RCE(url, proxyURL)
+	poc.EurekaXstreamRCE(url, proxyURL)
+	poc.JolokiaRCE(url, proxyURL)
+	poc.CVE_2018_1273(url, proxyURL)
+
 }
 
 func VulFromFile(filename string) {
@@ -43,8 +42,12 @@ func VulFromFile(filename string) {
 	wg.Wait()
 }
 
+type vulnerability func(url string, proxyURL string)
+
 func vul(url string) {
 	url = common.FormatURL(url)
+	proxyURL := *common.ProxyPtr
+
 	vulnerabilities := map[int]vulnerability{
 		1: exppackage.CVE_2018_1273,
 		2: exppackage.CVE_2021_21234,
@@ -58,8 +61,8 @@ func vul(url string) {
 	}
 
 	fmt.Println("[+] 目前支持漏洞如下：")
-	for num, funcName := range vulnerabilities {
-		funcName := runtime.FuncForPC(reflect.ValueOf(funcName).Pointer()).Name()
+	for num, vulnFunc := range vulnerabilities {
+		funcName := runtime.FuncForPC(reflect.ValueOf(vulnFunc).Pointer()).Name()
 		fmt.Printf(" %d: %s\n", num, funcName)
 	}
 
@@ -90,7 +93,8 @@ func vul(url string) {
 			fmt.Printf("%d 输入错误，请重新输入漏洞选择模块\n", choice)
 			continue
 		}
-		selectedFunc(url)
+
+		selectedFunc(url, proxyURL)
 	}
 	os.Exit(0)
 }

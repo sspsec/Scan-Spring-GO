@@ -2,12 +2,18 @@ package common
 
 import (
 	"bufio"
+	"encoding/base64"
 	"fmt"
 	"github.com/fatih/color"
+	"golang.org/x/net/proxy"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"os"
 	"regexp"
 	"strings"
+	"time"
 )
 
 func ReadUrlFromFile(filePath string) ([]string, error) {
@@ -106,4 +112,107 @@ func WriteToFile(filename, content string) error {
 		return err
 	}
 	return nil
+}
+
+func SleepIfNeeded() {
+	if *DelayPtr > 0 {
+		time.Sleep(time.Duration(*DelayPtr) * time.Second)
+	}
+}
+
+func MakeRequest(urls string, method string, proxyURL string, headers map[string]string, payload string) (*http.Response, []byte, error) {
+	client := &http.Client{
+		Timeout: requestTimeout,
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
+	}
+
+	if proxyURL != "" {
+		if strings.HasPrefix(proxyURL, "socks5") {
+			parsedURL, err := url.Parse(proxyURL)
+			if err != nil {
+				return nil, nil, fmt.Errorf("无效的 SOCKS 代理 URL: %w", err)
+			}
+
+			auth := parsedURL.User
+			var username, password string
+			if auth != nil {
+				username = auth.Username()
+				password, _ = auth.Password()
+			}
+
+			dialer, err := proxy.SOCKS5("tcp", parsedURL.Host, &proxy.Auth{
+				User:     username,
+				Password: password,
+			}, proxy.Direct)
+			if err != nil {
+				return nil, nil, fmt.Errorf("无法创建 SOCKS 代理: %w", err)
+			}
+
+			client.Transport = &http.Transport{
+				Dial: dialer.Dial,
+			}
+		} else {
+			parsedURL, err := url.Parse(proxyURL)
+			if err != nil {
+				return nil, nil, fmt.Errorf("无效的 HTTP 代理 URL: %w", err)
+			}
+
+			auth := parsedURL.User
+			var username, password string
+			if auth != nil {
+				username = auth.Username()
+				password, _ = auth.Password()
+			}
+
+			// 设置 HTTP 代理的认证
+			client.Transport = &http.Transport{
+				Proxy: http.ProxyURL(parsedURL),
+				ProxyConnectHeader: http.Header{
+					"Proxy-Authorization": []string{
+						"Basic " + basicAuth(username, password),
+					},
+				},
+			}
+		}
+	}
+
+	var req *http.Request
+	var err error
+
+	if method == "POST" {
+		req, err = http.NewRequest(method, urls, strings.NewReader(payload))
+	} else {
+		req, err = http.NewRequest(method, urls, nil)
+	}
+
+	if err != nil {
+		return nil, nil, fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	// 设置请求头
+	req.Header.Set("User-Agent", GetRandomUserAgent())
+
+	for key, value := range headers {
+		req.Header.Set(key, value)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("请求失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("读取响应体失败: %w", err)
+	}
+
+	return resp, body, nil
+}
+
+func basicAuth(username, password string) string {
+	auth := username + ":" + password
+	return base64.StdEncoding.EncodeToString([]byte(auth))
 }
