@@ -143,3 +143,5 @@ ssp -u http://example.com -delay 3
 如果有任何问题或者希望添加新功能，请提交工单给我！我们会尽力改进工具，提供更多功能和支持。
 
 ![扫码关注公众号](https://github.com/sspsec/ssp/assets/142762749/0654010c-cdcc-4cf5-8f22-fc33b8d86642)
+
+<img src="https://star-history.com/#sspsec/Scan-Spring-GO&Timeline">
