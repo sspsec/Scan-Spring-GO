@@ -2,6 +2,8 @@ module github.com/sspsec/Scan-Spring-GO
 
 go 1.25.0
 
+toolchain go1.25.13
+
 require (
 	github.com/dlclark/regexp2 v1.11.0
 	github.com/fatih/color v1.16.0
