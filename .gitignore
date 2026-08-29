@@ -1,0 +1,17 @@
+# 扫描结果与临时文件
+result.txt
+*.log
+
+# 构建产物
+ssp
+scan-spring-go
+Scan-Spring-GO
+*.exe
+dist/
+
+# IDE
+.idea/
+.vscode/
+
+# 系统文件
+.DS_Store

@@ -1,124 +1,173 @@
-# **SSP - Spring框架漏洞扫描工具**
+# **SSP - Spring 框架漏洞扫描工具**
 
-<img src="https://socialify.git.ci/sspsec/Scan-Spring-GO/image?description=1&descriptionEditable=%E9%92%88%E5%AF%B9SpringBoot%E7%9A%84%E6%B8%97%E9%80%8F%E5%B7%A5%E5%85%B7%EF%BC%8CSpringBoot%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E5%B7%A5%E5%85%B7&font=Inter&forks=1&language=1&logo=https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F142762749%3Fv%3D4&name=1&owner=1&pattern=Circuit%20Board&stargazers=1&theme=Auto" alt="Scan-Spring-GO" width="640" height="320" />
+<img src="https://socialify.git.ci/sspsec/Scan-Spring-GO/image?description=1&descriptionEditable=%E9%92%88%E5%AF%B9SpringBoot%E7%9A%84%E6%B8%97%E9%80%8F%E5%B7%A5%E5%85%B7%EF%BC%8CSpringBoot%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E5%B7%A5%E5%85%B7&font=JetBrains%20Mono&forks=1&language=1&logo=https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F142762749%3Fv%3D4&name=1&owner=1&pattern=Matrix&stargazers=1&theme=Dark" alt="Scan-Spring-GO" width="640" height="320" />
 
 ## 🚀 简介
 
-在日常渗透工作中，遇到很多Spring框架搭建的服务，很多都是Whitelabel Error Page页面，对于Spring的扫描工具github中也有很多项目 python的 java的，但使用go的就很少。因为自身电脑的缘故 使用go编译的工具 加入环境变量中 能让我很方便的使用命令行来使用这些命令行工具，做到打开命令行就能进行 "随手一测"。而像python，java写的类似图形化的工具，我需要进入到相关目录中运行或者双击才能进行使用，对于我这种非常不喜欢找文件的人来说，使用go编译的可执行文件加入环境变量中使用，对我来说是极大的方便。
+SSP 是一个使用 Go 语言实现的轻量、高效的 Spring 全家桶漏洞扫描与利用工具：支持 17 个漏洞模块的检测与利用、actuator/swagger/druid 信息泄露探测、自定义字典、并发限速控制，并内置 **MCP 服务端**——可将全部能力暴露给 AI 客户端（Claude Desktop、ZCode、Cursor 等），实现"AI 一句话完成从指纹识别到漏洞利用"的自动化渗透链路。
 
-因此，我决定开发SSP工具，用Go语言实现一个轻量、高效的Spring漏洞扫描和利用工具，同时也练习自己的Go编程能力。
-
-SSP工具支持探测和利用多个Spring框架版本的漏洞，帮助用户快速发现Spring服务中的安全隐患。
+> 🤖 **本项目 v2.x 由 AI 全程重构**：架构重设计、17 个漏洞模块统一接口化、单元测试与 CI、MCP 服务端，全部由 AI（ZCode）完成，人工负责需求、验收与真实环境实测。
 
 ------
 
 ## 🛠️ 功能特性
 
-- **单URL和批量URL扫描**：支持对单个URL及批量URL进行信息泄露和漏洞探测，方便快速发现潜在安全问题。
-- **多漏洞支持**：涵盖多个Spring框架漏洞，包括RCE、信息泄露、文件上传、反序列化漏洞等。
-- **代理支持**：支持通过HTTP代理进行扫描，满足受限网络环境的需求，支持带有用户名和密码的代理格式。
-- **请求延迟功能**：用户可以设置请求之间的延迟时间（单位：秒），避免对目标系统造成过大压力。
-- **彩色输出**：在终端中显示彩色文本，使扫描过程更加直观，增强可读性。
-- **动态横幅**：启动时显示炫酷的彩色横幅，包含工具名称、作者信息及GitHub链接，提升用户体验。
+- **多漏洞检测与利用**：17 个漏洞模块统一接口化（无害检测 `Detect` / 受控利用 `Exploit`），新增漏洞只需添加一个文件
+- **信息泄露探测**：内置 210+ 端点字典（actuator/swagger/druid），支持 `-d` 合并、`-D` 替换自定义字典
+- **双运行形态**：CLI 命令行 + MCP 服务端（stdio），检测与利用能力以结构化 JSON 输出
+- **并发与限速**：worker pool + 全局限速 + 上下文取消，长时间运行状态稳定
+- **安全闸门**：MCP 模式支持目标白名单（`--scope`）、利用工具独立开关（`--enable-exploit`）、全调用审计日志
+- **彩色输出**：终端彩色文本 + 无色结果落盘，批量扫描互不干扰
 
 ------
 
-## 🔥 支持的漏洞
+## 🔥 支持的漏洞（17 个）
 
-本工具支持探测和利用以下Spring框架常见漏洞：
+**RCE / SpEL 注入**
 
-- **2023 JeeSpringCloud 任意文件上传漏洞**
-- **CVE-2022-22947** Spring Cloud Gateway SpEL RCE漏洞
-- **CVE-2022-22963** Spring Cloud Function SpEL RCE漏洞
-- **CVE-2022-22965** Spring Core RCE漏洞
-- **CVE-2021-21234** 任意文件读取漏洞
-- **SnakeYAML RCE漏洞**
-- **Eureka XStream反序列化漏洞**
-- **Jolokia配置不当导致RCE漏洞**
-- **CVE-2018-1273** Spring Data Commons RCE漏洞
+- **CVE-2022-22965** Spring Framework RCE（Spring4Shell）
+- **CVE-2022-22963** Spring Cloud Function SpEL RCE
+- **CVE-2022-22947** Spring Cloud Gateway SpEL RCE
+- **CVE-2018-1273** Spring Data Commons SpEL RCE
+- **CVE-2018-1270** Spring Messaging STOMP selector SpEL RCE
+- **CVE-2017-8046** Spring Data REST PATCH 路径 SpEL RCE
+- **CVE-2017-4971** Spring WebFlow transition 参数 SpEL RCE
+- **CVE-2016-4977** Spring Security OAuth2 response_type SpEL RCE（回显型）
+
+**信息泄露 / 文件读取**
+
+- **CVE-2025-41243** Spring Cloud Gateway 环境属性修改（可扩展任意文件读取）
+- **CVE-2025-41242** Spring Framework + Jetty URI 解析不一致路径穿越（Ghost Bits）
+- **CVE-2021-21234** Spring Boot log view 任意文件读取
+- **CVE-2022-22978** Spring Security RegexRequestMatcher 认证绕过
+
+**反序列化 / 上传**
+
+- **CVE-2024-37084** Spring Cloud Data Flow / Skipper 反序列化 RCE
+- **SnakeYAML-RCE** Spring Boot 配置注入反序列化
+- **Eureka-Xstream-RCE** Eureka XStream 反序列化
+- **Jolokia-JNDI-RCE** Jolokia 配置不当导致 RCE
+- **JeeSpring-2023** JeeSpringCloud 任意文件上传
 
 ------
 
 ## 📜 使用方法
 
-### 🔍 执行单个URL信息泄露扫描
-
-```bash
-ssp -u http://example.com
-```
-
-*通过此命令，您可以快速扫描单个URL，获取Spring框架信息泄露端点。*
-
-![image-20241202140734538](https://s2.loli.net/2024/12/02/fqt8wGdLg3OPXB9.png)
-
-------
-
-### 📄 批量URL信息泄露扫描
-
-```bash
-ssp -uf urls.txt
-```
-
-*通过此命令，您可以扫描文件中包含的多个URL，方便批量处理。*
-
-------
-
-### 🧪 单个目标漏洞扫描
+### 🔍 漏洞检测（命中后可交互利用）
 
 ```bash
 ssp -v http://example.com
 ```
 
-*工具将自动探测该URL是否存在漏洞，并进入漏洞利用模块（如果发现漏洞）。*
+*自动完成指纹识别 + 全部漏洞的无害检测，命中后列出可利用模块，自主选择是否进入交互 shell。*
 
-![image-20241202140906480](https://s2.loli.net/2024/12/02/Vd6bKUliugq2TzL.png)
-
-![image-20241202140924768](https://s2.loli.net/2024/12/02/4Yrbo2Vu3TSL7BG.png)
-
-------
-
-### 🧰 批量目标漏洞扫描
+### 🧪 非交互命令执行
 
 ```bash
-ssp -vf urls.txt
+ssp -v http://example.com -c "id"                    # 首个命中且可利用的模块
+ssp -v http://example.com -ce CVE-2022-22947 -c "id" # 指定漏洞模块执行
 ```
 
-*通过此命令，可以批量扫描多个目标URL，进行漏洞探测和利用。*
+*脚本化/AI 调用推荐形态：探测 → 命中 → 执行 → 结构化结果。*
 
-------
-
-### 🕹️ 使用代理进行扫描
+### 🔍 单 URL 信息泄露扫描
 
 ```bash
-ssp -u http://example.com -p http://username:password@proxyhost:proxyport
+ssp -u http://example.com
 ```
 
-*在受限的网络环境中，您可以通过HTTP代理来执行扫描。*
-
-![image-20241202141137882](https://s2.loli.net/2024/12/02/fyMuSbTF2PYJ36e.png)
-
-------
-
-### ⏱️ 设置请求延迟
+### 📄 批量扫描
 
 ```bash
-ssp -u http://example.com -delay 3
+ssp -uf urls.txt        # 批量信息泄露
+ssp -vf urls.txt        # 批量漏洞检测
 ```
 
-*为了防止对目标服务器造成压力，您可以设置请求之间的延迟时间（单位：秒）。*
+### 📚 自定义字典
+
+```bash
+ssp -u http://example.com -d mydict.txt   # 与内置字典合并（自动去重）
+ssp -u http://example.com -D mydict.txt   # 完全替换内置字典
+```
+
+*字典每行一条路径，支持 `#` 注释，自动去 BOM、去重、清洗开头 `/`。*
+
+### 🕹️ 代理 / 限速 / 并发
+
+```bash
+ssp -u http://example.com -p socks5://127.0.0.1:1080 -t 30 -delay 1 -timeout 5
+```
 
 ------
 
 ## 🧑‍💻 命令行参数
 
-| 参数         | 说明                                                      |
-| ------------ | --------------------------------------------------------- |
-| `-u <url>`   | 对单个URL进行信息泄露扫描                                 |
-| `-uf <file>` | 批量扫描文件中的多个URL进行信息泄露检测                   |
-| `-v <url>`   | 对单个URL进行漏洞扫描                                     |
-| `-vf <file>` | 批量扫描文件中的多个URL进行漏洞扫描和利用                 |
-| `-p <proxy>` | 使用HTTP代理，格式为 `http://username:password@host:port` |
-| `-delay <s>` | 设置请求之间的延迟时间，单位为秒                          |
+| 参数 | 说明 |
+| --- | --- |
+| `-u <url>` | 对单个 URL 进行信息泄露扫描 |
+| `-uf <file>` | 批量信息泄露扫描 |
+| `-v <url>` | 对单个 URL 进行漏洞检测（命中后可交互利用） |
+| `-vf <file>` | 批量漏洞检测 |
+| `-c <cmd>` | 命中后执行单条命令（配合 `-v`，非交互） |
+| `-ce <cve>` | 指定执行命令的漏洞 ID |
+| `-p <proxy>` | 代理，格式 `socks5\|http://user:pass@host:port` |
+| `-d <file>` | 自定义字典，与内置合并（`#` 为注释） |
+| `-D <file>` | 自定义字典，完全替换内置 |
+| `-t <n>` | 单目标端点探测并发数（默认 20） |
+| `-o <file>` | 泄露扫描结果输出文件（默认 result.txt） |
+| `-debug` | 输出每个失败请求的详情 |
+| `-delay <s>` | 请求全局间隔（秒），0 为不限速 |
+| `-timeout <s>` | 单请求超时（秒），默认 6 |
+| `-version` | 输出版本号 |
+
+------
+
+## 🤖 MCP 模式（AI 调用）
+
+将全部检测/利用能力暴露给 AI 客户端（Claude Desktop、ZCode、Cursor 等）：
+
+```bash
+ssp mcp --scope 127.0.0.1 --enable-exploit
+```
+
+### MCP 客户端配置示例
+
+```json
+{
+  "mcpServers": {
+    "scan-spring-go": {
+      "command": "/path/to/ssp",
+      "args": ["mcp", "--scope", "127.0.0.1", "--enable-exploit"]
+    }
+  }
+}
+```
+
+### 工具清单
+
+| 工具 | 说明 |
+| --- | --- |
+| `list_vulns` | 列出支持的漏洞模块（ID/类型/严重级别/参数说明） |
+| `spring_fingerprint` | Spring 指纹识别 |
+| `spring_leak_scan` | actuator/swagger/druid 信息泄露探测 |
+| `spring_vuln_detect` | 全部（或指定 CVE 的）无害检测 |
+| `spring_exploit` | 利用执行（**需 `--enable-exploit` 显式开启**） |
+| `batch_scan` | 多目标批量检测 |
+
+### 安全闸门
+
+- `--scope`：目标白名单（域名/IP），出界请求直接拒绝
+- `spring_exploit` 默认不注册，必须显式 `--enable-exploit` 启动
+- 每次工具调用写 stderr 审计日志（时间/工具/目标/参数）
+
+------
+
+## 📦 构建
+
+```bash
+go build -o ssp .
+go test ./...
+```
 
 ------
 
@@ -126,7 +175,7 @@ ssp -u http://example.com -delay 3
 
 - 使用本工具进行漏洞扫描时，请务必遵守法律法规，仅在授权的范围内进行操作。
 - 任何未经授权的系统扫描和利用行为可能触犯法律，用户应自行承担责任。
-- 扫描过程中，请保持网络环境安全，避免对生产环境造成影响。
+- 部分利用会修改目标运行时状态（如 CVE-2025-41243 的属性修改、CVE-2022-22965 的日志阀门），工具会在结束后尽力恢复，完整恢复建议重启目标服务。
 
 ------
 
