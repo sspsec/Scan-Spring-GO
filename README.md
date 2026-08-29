@@ -1,5 +1,9 @@
 # **SSP - Spring 框架漏洞扫描工具**
 
+[![CI](https://github.com/sspsec/Scan-Spring-GO/actions/workflows/ci.yml/badge.svg)](https://github.com/sspsec/Scan-Spring-GO/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/sspsec/Scan-Spring-GO)](https://github.com/sspsec/Scan-Spring-GO/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 <img src="https://socialify.git.ci/sspsec/Scan-Spring-GO/image?description=1&descriptionEditable=%E9%92%88%E5%AF%B9SpringBoot%E7%9A%84%E6%B8%97%E9%80%8F%E5%B7%A5%E5%85%B7%EF%BC%8CSpringBoot%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8%E5%B7%A5%E5%85%B7&font=JetBrains%20Mono&forks=1&language=1&logo=https%3A%2F%2Favatars.githubusercontent.com%2Fu%2F142762749%3Fv%3D4&name=1&owner=1&pattern=Matrix&stargazers=1&theme=Dark" alt="Scan-Spring-GO" width="640" height="320" />
 
 ## 🚀 简介
